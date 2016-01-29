@@ -147,6 +147,7 @@ enum ParseFlag {
     kParseStopWhenDoneFlag = 8,     //!< After parsing a complete JSON root from stream, stop further processing the rest of stream. When this flag is used, parser will not generate kParseErrorDocumentRootNotSingular error.
     kParseFullPrecisionFlag = 16,   //!< Parse number in full precision (but slower).
     kParseCommentsFlag = 32,        //!< Allow one-line (//) and multi-line (/**/) comments.
+    kParseTrailingCommasFlag = 64,  //!< Allow trailing commas at the end of objects and arrays.
     kParseDefaultFlags = RAPIDJSON_PARSE_DEFAULT_FLAGS  //!< Default parse flags. Can be customized by defining RAPIDJSON_PARSE_DEFAULT_FLAGS
 };
 
@@ -560,6 +561,15 @@ private:
                     RAPIDJSON_PARSE_ERROR(kParseErrorObjectMissCommaOrCurlyBracket, is.Tell());
                     break;
             }
+
+            if (parseFlags & kParseTrailingCommasFlag) {
+                if (is.Peek() == '}') {
+                    is.Take();
+                    if (RAPIDJSON_UNLIKELY(!handler.EndObject(memberCount)))
+                        RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
+                    return;
+                }
+            }
         }
     }
 
@@ -602,6 +612,15 @@ private:
                 default:  
                     RAPIDJSON_PARSE_ERROR(kParseErrorArrayMissCommaOrSquareBracket, is.Tell());
                     break;
+            }
+
+            if (parseFlags & kParseTrailingCommasFlag) {
+                if (is.Peek() == ']') {
+                    is.Take();
+                    if (RAPIDJSON_UNLIKELY(!handler.EndArray(elementCount)))
+                        RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
+                    return;
+                }
             }
         }
     }
